@@ -20,8 +20,9 @@ def get_from_queue():
         MaxNumberOfMessages=1,
         MessageAttributeNames=["All"],
         VisibilityTimeout=0,
-        WaitTimSeconds=0
+        WaitTimeSeconds=0
     )
+    print(response)
     message = response["Messages"][0]
     receipt_handle = message["ReceiptHandle"]
     print(message)
@@ -32,3 +33,5 @@ def get_from_queue():
 
 def send_to_teams():
     return
+
+get_from_queue()
