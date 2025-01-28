@@ -20,18 +20,22 @@ def get_from_queue():
         MaxNumberOfMessages=1,
         MessageAttributeNames=["All"],
         VisibilityTimeout=0,
-        WaitTimeSeconds=0
+        WaitTimeSeconds=20
     )
-    print(response)
+
+    if "Messages" not in response:
+        return
+
     message = response["Messages"][0]
     receipt_handle = message["ReceiptHandle"]
-    print(message)
+    
     sqs.delete_message(
         QueueUrl=queue,
         ReceiptHandle=receipt_handle
     )
+    send_to_teams(message)
 
-def send_to_teams():
-    return
+def send_to_teams(message):
+    print(message)
 
 get_from_queue()
