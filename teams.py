@@ -1,14 +1,16 @@
 import os
+from threading import Thread
+
 import boto3
 import pymsteams
 
 from dotenv import load_dotenv
 
 load_dotenv()
+# Environment variables
 queue = os.getenv("HIGH_PRIORITY_QUEUE")
 access_id = os.getenv("ACCESS_ID")
 access_key = os.getenv("ACCESS_KEY")
-
 teams = os.getenv("TEAMS_WEBHOOK")
 
 sqs = boto3.client("sqs",
@@ -16,32 +18,45 @@ sqs = boto3.client("sqs",
                    aws_access_key_id=access_id,
                    aws_secret_access_key=access_key
                    )
+run = False
+
 
 def get_from_queue():
-    response = sqs.receive_message(
-        QueueUrl=queue,
-        MaxNumberOfMessages=1,
-        MessageAttributeNames=["All"],
-        VisibilityTimeout=0,
-        WaitTimeSeconds=20
-    )
+    while run:
+        response = sqs.receive_message(
+            QueueUrl=queue,
+            MaxNumberOfMessages=1,
+            MessageAttributeNames=["All"],
+            VisibilityTimeout=0,
+            WaitTimeSeconds=20
+        )
 
-    if "Messages" not in response:
-        return
+        if "Messages" not in response:
+            continue
 
-    message = response["Messages"][0]
-    receipt_handle = message["ReceiptHandle"]
+        message = response["Messages"][0]
+        receipt_handle = message["ReceiptHandle"]
 
-    sqs.delete_message(
-        QueueUrl=queue,
-        ReceiptHandle=receipt_handle
-    )
-    send_to_teams(message)
+        sqs.delete_message(
+            QueueUrl=queue,
+            ReceiptHandle=receipt_handle
+        )
+        send_to_teams(message)
 
 def send_to_teams(message):
-    print(message["Body"])
     outgoing = pymsteams.connectorcard(teams)
     outgoing.text(message["Body"])
     outgoing.send()
 
-get_from_queue()
+
+
+
+if __name__ == "__main__":
+    run = True
+    thread = Thread(target = get_from_queue)
+    thread.start()
+    while True:
+        input1 = input()
+        if input1 == "close":
+            run = False
+            break
