@@ -1,5 +1,6 @@
 import os
 import boto3
+import pymsteams
 
 from dotenv import load_dotenv
 
@@ -7,6 +8,8 @@ load_dotenv()
 queue = os.getenv("HIGH_PRIORITY_QUEUE")
 access_id = os.getenv("ACCESS_ID")
 access_key = os.getenv("ACCESS_KEY")
+
+teams = os.getenv("TEAMS_WEBHOOK")
 
 sqs = boto3.client("sqs",
                    region_name="us-east-1",
@@ -28,7 +31,7 @@ def get_from_queue():
 
     message = response["Messages"][0]
     receipt_handle = message["ReceiptHandle"]
-    
+
     sqs.delete_message(
         QueueUrl=queue,
         ReceiptHandle=receipt_handle
@@ -36,6 +39,9 @@ def get_from_queue():
     send_to_teams(message)
 
 def send_to_teams(message):
-    print(message)
+    print(message["Body"])
+    outgoing = pymsteams.connectorcard(teams)
+    outgoing.text(message["Body"])
+    outgoing.send()
 
 get_from_queue()
