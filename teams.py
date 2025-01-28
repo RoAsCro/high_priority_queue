@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 # Environment variables
 queue = os.getenv("HIGH_PRIORITY_QUEUE")
-access_id = os.getenv("ACCESS_ID")
-access_key = os.getenv("ACCESS_KEY")
+access_id = os.getenv("AWS_ACCESS_KEY_ID")
+access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 teams = os.getenv("TEAMS_WEBHOOK")
 
 sqs = boto3.client("sqs",
@@ -19,7 +19,6 @@ sqs = boto3.client("sqs",
                    aws_secret_access_key=access_key
                    )
 run = False
-
 
 def get_from_queue():
     while run:
@@ -47,9 +46,6 @@ def send_to_teams(message):
     outgoing = pymsteams.connectorcard(teams)
     outgoing.text(message["Body"])
     outgoing.send()
-
-
-
 
 if __name__ == "__main__":
     run = True
