@@ -22,6 +22,7 @@ sqs = boto3.client("sqs",
 run = False
 
 def get_from_queue():
+
     response = sqs.receive_message(
         QueueUrl=queue,
         MaxNumberOfMessages=1,
@@ -36,11 +37,16 @@ def get_from_queue():
     message = response["Messages"][0]
     receipt_handle = message["ReceiptHandle"]
 
+    try:
+        send_to_teams(message)
+    except pymsteams.TeamsWebhookException as ex:
+        print(ex)
+        return
+
     sqs.delete_message(
         QueueUrl=queue,
         ReceiptHandle=receipt_handle
     )
-    send_to_teams(message)
 
 def send_to_teams(message):
     print("Sending...")
