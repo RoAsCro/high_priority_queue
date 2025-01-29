@@ -1,3 +1,4 @@
+import json
 import os
 from threading import Thread
 
@@ -44,7 +45,9 @@ def get_from_queue():
 
 def send_to_teams(message):
     outgoing = pymsteams.connectorcard(teams)
-    outgoing.text(message["Body"])
+    message_json = json.loads(message["Body"])
+    outgoing.text(f"{message_json['priority']} priority: {message_json['title']}\n"
+                  f"{message_json['message']}")
     outgoing.send()
 
 if __name__ == "__main__":
