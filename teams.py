@@ -22,40 +22,38 @@ sqs = boto3.client("sqs",
 run = False
 
 def get_from_queue():
-    while run:
-        response = sqs.receive_message(
-            QueueUrl=queue,
-            MaxNumberOfMessages=1,
-            MessageAttributeNames=["All"],
-            VisibilityTimeout=0,
-            WaitTimeSeconds=20
-        )
+    response = sqs.receive_message(
+        QueueUrl=queue,
+        MaxNumberOfMessages=1,
+        MessageAttributeNames=["All"],
+        VisibilityTimeout=0,
+        WaitTimeSeconds=20
+    )
 
-        if "Messages" not in response:
-            continue
+    if "Messages" not in response:
+        return
 
-        message = response["Messages"][0]
-        receipt_handle = message["ReceiptHandle"]
+    message = response["Messages"][0]
+    receipt_handle = message["ReceiptHandle"]
 
-        sqs.delete_message(
-            QueueUrl=queue,
-            ReceiptHandle=receipt_handle
-        )
-        send_to_teams(message)
+    sqs.delete_message(
+        QueueUrl=queue,
+        ReceiptHandle=receipt_handle
+    )
+    send_to_teams(message)
 
 def send_to_teams(message):
+    print("Sending...")
     outgoing = pymsteams.connectorcard(teams)
     message_json = json.loads(message["Body"])
-    outgoing.text(f"{message_json['priority']} priority: {message_json['title']}\n"
-                  f"{message_json['message']}")
+    priority = message_json['priority'].capitalize()
+    body: str = message_json['message']
+    body = body.replace("\n", "<br>")
+    outgoing.text(f"<h1 style='font-weight: bold'>{priority} priority: {message_json['title']}</h1>"
+                  f"<p>{body}</p>")
     outgoing.send()
 
 if __name__ == "__main__":
     run = True
-    thread = Thread(target = get_from_queue)
-    thread.start()
     while True:
-        input1 = input()
-        if input1 == "close":
-            run = False
-            break
+        get_from_queue()
