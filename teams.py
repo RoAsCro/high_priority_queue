@@ -11,13 +11,15 @@ load_dotenv()
 queue = os.getenv("HIGH_PRIORITY_QUEUE")
 access_id = os.getenv("AWS_ACCESS_KEY_ID")
 access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-teams = os.getenv("TEAMS_WEBHOOK")
+teams_webhook = os.getenv("TEAMS_WEBHOOK")
 
 sqs = boto3.client("sqs",
                    region_name="us-east-1",
                    aws_access_key_id=access_id,
                    aws_secret_access_key=access_key
                    )
+
+running = False
 
 def get_from_queue():
 
@@ -39,7 +41,7 @@ def get_from_queue():
 
 def send_to_teams(message_to_send):
     print("Sending...")
-    outgoing = pymsteams.connectorcard(teams)
+    outgoing = pymsteams.connectorcard(teams_webhook)
     message_json = json.loads(message_to_send["Body"])
     priority = message_json['priority'].capitalize()
     body: str = message_json['message']
@@ -59,7 +61,9 @@ def delete(message):
 
 
 def run():
-    while True:
+    global running
+    running = True
+    while running:
         message = get_from_queue()
         if message:
             try:
