@@ -48,6 +48,16 @@ def send_to_teams(message_to_send):
                   f"<p>{body}</p>")
     outgoing.send()
 
+
+def delete(message):
+    receipt_handle = message["ReceiptHandle"]
+
+    sqs.delete_message(
+        QueueUrl=queue,
+        ReceiptHandle=receipt_handle
+    )
+
+
 def run():
     while True:
         message = get_from_queue()
@@ -57,13 +67,7 @@ def run():
             except pymsteams.TeamsWebhookException as ex:
                 print(ex)
                 continue
-
-            receipt_handle = message["ReceiptHandle"]
-
-            sqs.delete_message(
-                QueueUrl=queue,
-                ReceiptHandle=receipt_handle
-            )
+            delete(message)
 
 if __name__ == "__main__":
     run()
