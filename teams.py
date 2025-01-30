@@ -1,6 +1,5 @@
 import json
 import os
-from threading import Thread
 
 import boto3
 import pymsteams
@@ -19,7 +18,6 @@ sqs = boto3.client("sqs",
                    aws_access_key_id=access_id,
                    aws_secret_access_key=access_key
                    )
-run = False
 
 def get_from_queue():
 
@@ -32,26 +30,17 @@ def get_from_queue():
     )
 
     if "Messages" not in response:
-        return
+        return None
 
     message = response["Messages"][0]
-    receipt_handle = message["ReceiptHandle"]
 
-    try:
-        send_to_teams(message)
-    except pymsteams.TeamsWebhookException as ex:
-        print(ex)
-        return
+    return message
 
-    sqs.delete_message(
-        QueueUrl=queue,
-        ReceiptHandle=receipt_handle
-    )
 
-def send_to_teams(message):
+def send_to_teams(message_to_send):
     print("Sending...")
     outgoing = pymsteams.connectorcard(teams)
-    message_json = json.loads(message["Body"])
+    message_json = json.loads(message_to_send["Body"])
     priority = message_json['priority'].capitalize()
     body: str = message_json['message']
     body = body.replace("\n", "<br>")
@@ -59,7 +48,22 @@ def send_to_teams(message):
                   f"<p>{body}</p>")
     outgoing.send()
 
-if __name__ == "__main__":
-    run = True
+def run():
     while True:
-        get_from_queue()
+        message = get_from_queue()
+        if message:
+            try:
+                send_to_teams(message)
+            except pymsteams.TeamsWebhookException as ex:
+                print(ex)
+                continue
+
+            receipt_handle = message["ReceiptHandle"]
+
+            sqs.delete_message(
+                QueueUrl=queue,
+                ReceiptHandle=receipt_handle
+            )
+
+if __name__ == "__main__":
+    run()
