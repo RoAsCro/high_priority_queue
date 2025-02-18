@@ -1,30 +1,42 @@
 import json
 import os
+from venv import logger
 
 import pymsteams
 
 from dotenv import load_dotenv
+from flask import Flask
 
-from abstract_comsumer import AbstractConsumer
+import abstract_comsumer
+consumer = abstract_comsumer
 
 load_dotenv()
-class TeamsConsumer(AbstractConsumer):
-    teams_webhook = os.getenv("TEAMS_WEBHOOK")
-    exception = pymsteams.TeamsWebhookException
-    def send(self, message_to_send):
-        print("Sending...")
-        outgoing = pymsteams.connectorcard(self.teams_webhook)
-        message_json = json.loads(message_to_send["Body"])
-        priority = message_json['priority'].capitalize()
-        body: str = message_json['message']
-        body = body.replace("\n", "<br>")
-        outgoing.text(f"<h1 style='font-weight: bold'>{priority} priority: {message_json['title']}</h1>"
-                      f"<p>{body}</p>")
-        outgoing.send()
+teams_webhook = os.getenv("TEAMS_WEBHOOK")
+exception = pymsteams.TeamsWebhookException
+def send(message_to_send):
+    logger.info("Sending...")
+    outgoing = pymsteams.connectorcard(teams_webhook)
+    message_json = json.loads(message_to_send["Body"])
+    priority = message_json['priority'].capitalize()
+    body: str = message_json['message']
+    body = body.replace("\n", "<br>")
+    outgoing.text(f"<h1 style='font-weight: bold'>{priority} priority: {message_json['title']}</h1>"
+                  f"<p>{body}</p>")
+    outgoing.send()
 
 
+consumer.send = send
+consumer.exception = exception
+bg_thread = consumer.background_thread()
 def run():
-    TeamsConsumer().run()
+    health_checker = Flask(__name__)
+    health_checker.register_blueprint(consumer.router)
+    return health_checker
 
 if __name__ == "__main__":
-    run()
+    try:
+        run().run(host="0.0.0.0")
+    except KeyboardInterrupt:
+        logger.info("Shutting Down...")
+        bg_thread.join()
+        consumer.running = False
