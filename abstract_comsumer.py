@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 class AbstractConsumer(ABC):
     load_dotenv()
     # Environment variables
-    queue = os.getenv("HIGH_PRIORITY_QUEUE")
+    queue = os.getenv("QUEUE")
     access_id = os.getenv("AWS_ACCESS_KEY_ID")
     access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
     exception = Exception
