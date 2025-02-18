@@ -4,10 +4,12 @@ import time
 import boto3
 import pytest
 
-import teams
+from teams import TeamsConsumer
 from moto import mock_aws
 
-default_teams_method  = teams.send_to_teams
+teams_consumer = TeamsConsumer()
+
+default_teams_method  = teams_consumer.send
 
 message_body = '{"priority": "high", "title": "message title", "message": "this is a message body"}'
 received_message = None
@@ -22,7 +24,7 @@ def test_get_message():
                          DelaySeconds=0,
                          MessageBody=message_body)
 
-    retrieved_message = teams.get_from_queue()
+    retrieved_message = teams_consumer.get_from_queue()
 
     assert retrieved_message is not None
 
@@ -35,8 +37,8 @@ def test_delete_message():
                          DelaySeconds=0,
                          MessageBody=message_body)
 
-    retrieved_message = teams.get_from_queue()
-    teams.delete(retrieved_message)
+    retrieved_message = teams_consumer.get_from_queue()
+    teams_consumer.delete(retrieved_message)
 
     assert "Message" not in mock_sqs.receive_message(
         QueueUrl=queue,
@@ -50,7 +52,7 @@ def test_delete_message():
 def test_no_message():
     sqs = prepare_aws()
 
-    retrieved_message = teams.get_from_queue()
+    retrieved_message = teams_consumer.get_from_queue()
 
     assert retrieved_message is None
 
@@ -60,13 +62,13 @@ def test_run_without_teams():
     sqs = prepare_aws()
     mock_sqs = sqs[0]
     queue = sqs[1]
-    teams.send_to_teams = send_to_teams_stub
+    teams_consumer.send = send_to_teams_stub
     mock_sqs.send_message(QueueUrl=queue,
                         DelaySeconds=0,
                         MessageBody=message_body)
     timer_thread = threading.Thread(target=timer, args=[10]) # Ensure test doesn't run forever if it fails
     timer_thread.start()
-    teams.run()
+    teams_consumer.run()
 
 
     assert (received_message is not None # Message was received
@@ -82,21 +84,21 @@ def test_run_without_teams():
 def prepare_aws():
     mock_sqs = boto3.client("sqs", region_name='us-east-1')
     queue = mock_sqs.create_queue(QueueName="team")['QueueUrl']
-    teams.sqs = mock_sqs
-    teams.queue = queue
+    teams_consumer.sqs = mock_sqs
+    teams_consumer.queue = queue
     return mock_sqs, queue
 
 def timer(seconds):
     time.sleep(seconds)
-    teams.running = False
+    teams_consumer.running = False
 
 def send_to_teams_stub(message):
     global received_message
     received_message = message["Body"]
-    teams.running = False
+    teams_consumer.running = False
 
 @pytest.fixture(autouse=True)
 def before_each():
-    teams.send_to_teams = default_teams_method
+    teams_consumer.send = default_teams_method
     global received_message
     received_message = None
