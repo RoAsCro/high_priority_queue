@@ -4,7 +4,7 @@ import time
 import boto3
 import pytest
 
-from teams import TeamsConsumer
+from teams.teams import TeamsConsumer
 from moto import mock_aws
 
 teams_consumer = TeamsConsumer()

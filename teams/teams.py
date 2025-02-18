@@ -1,7 +1,6 @@
 import json
 import os
 
-import boto3
 import pymsteams
 
 from dotenv import load_dotenv
