@@ -3,11 +3,10 @@ import time
 
 import boto3
 import pytest
-
-from teams.teams import TeamsConsumer
+import teams
+teams_consumer = teams.teams_consumer
+consumer = teams_consumer.consumer
 from moto import mock_aws
-
-teams_consumer = TeamsConsumer()
 
 default_teams_method  = teams_consumer.send
 
@@ -24,7 +23,7 @@ def test_get_message():
                          DelaySeconds=0,
                          MessageBody=message_body)
 
-    retrieved_message = teams_consumer.get_from_queue()
+    retrieved_message = consumer.get_from_queue()
 
     assert retrieved_message is not None
 
@@ -37,8 +36,8 @@ def test_delete_message():
                          DelaySeconds=0,
                          MessageBody=message_body)
 
-    retrieved_message = teams_consumer.get_from_queue()
-    teams_consumer.delete(retrieved_message)
+    retrieved_message = consumer.get_from_queue()
+    consumer.delete(retrieved_message)
 
     assert "Message" not in mock_sqs.receive_message(
         QueueUrl=queue,
@@ -50,9 +49,9 @@ def test_delete_message():
 
 @mock_aws
 def test_no_message():
-    sqs = prepare_aws()
+    prepare_aws()
 
-    retrieved_message = teams_consumer.get_from_queue()
+    retrieved_message = consumer.get_from_queue()
 
     assert retrieved_message is None
 
@@ -62,15 +61,16 @@ def test_run_without_teams():
     sqs = prepare_aws()
     mock_sqs = sqs[0]
     queue = sqs[1]
-    teams_consumer.send = send_to_teams_stub
+    consumer.send = send_to_teams_stub
     mock_sqs.send_message(QueueUrl=queue,
                         DelaySeconds=0,
                         MessageBody=message_body)
-    timer_thread = threading.Thread(target=timer, args=[10]) # Ensure test doesn't run forever if it fails
+    timer_thread = threading.Thread(target=timer, args=[20]) # Ensure test doesn't run forever if it fails
     timer_thread.start()
-    teams_consumer.run()
+    consumer.running = True
+    teams_consumer.consumer.process()
 
-
+    global received_message
     assert (received_message is not None # Message was received
             and "Message" not in mock_sqs.receive_message( # Message was deleted
         QueueUrl=queue,
@@ -84,13 +84,13 @@ def test_run_without_teams():
 def prepare_aws():
     mock_sqs = boto3.client("sqs", region_name='us-east-1')
     queue = mock_sqs.create_queue(QueueName="team")['QueueUrl']
-    teams_consumer.sqs = mock_sqs
-    teams_consumer.queue = queue
+    consumer.sqs = mock_sqs
+    consumer.queue = queue
     return mock_sqs, queue
 
 def timer(seconds):
     time.sleep(seconds)
-    teams_consumer.running = False
+    consumer.running = False
 
 def send_to_teams_stub(message):
     global received_message
@@ -99,6 +99,8 @@ def send_to_teams_stub(message):
 
 @pytest.fixture(autouse=True)
 def before_each():
-    teams_consumer.send = default_teams_method
+    consumer.running = False
+    teams_consumer.bg_thread.join()
+    consumer.send = default_teams_method
     global received_message
     received_message = None
