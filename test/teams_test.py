@@ -67,7 +67,7 @@ def test_process_without_teams():
     timer_thread.start()
     consumer.running = True
     teams_consumer.consumer.process()
-
+    consumer.running = False
     global received_message
     assert (received_message is not None # Message was received
             and "Message" not in mock_sqs.receive_message( # Message was deleted
@@ -93,7 +93,7 @@ def timer(seconds):
 def send_to_teams_stub(message):
     global received_message
     received_message = message["Body"]
-    teams_consumer.running = False
+    consumer.running = False
 
 @pytest.fixture(autouse=True)
 def before_each():
