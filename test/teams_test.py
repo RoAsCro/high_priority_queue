@@ -3,6 +3,7 @@ import time
 
 import boto3
 import pytest
+
 import teams
 teams_consumer = teams.teams_consumer
 consumer = teams_consumer.consumer
