@@ -42,7 +42,7 @@ def test_delete_message():
         MaxNumberOfMessages=1,
         MessageAttributeNames=["All"],
         VisibilityTimeout=0,
-        WaitTimeSeconds=20
+        WaitTimeSeconds=0
     )
 
 @mock_aws
@@ -75,7 +75,7 @@ def test_process_without_teams():
         MaxNumberOfMessages=1,
         MessageAttributeNames=["All"],
         VisibilityTimeout=0,
-        WaitTimeSeconds=20
+        WaitTimeSeconds=0
     ))
 
 @mock_aws
