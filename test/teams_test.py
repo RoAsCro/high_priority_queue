@@ -13,9 +13,6 @@ default_teams_method  = teams_consumer.send
 message_body = '{"priority": "high", "title": "message title", "message": "this is a message body"}'
 received_message = None
 
-def replacement_send(message):
-    pass
-
 @mock_aws
 def test_get_message():
     sqs = prepare_aws()
@@ -57,7 +54,7 @@ def test_no_message():
 
 
 @mock_aws
-def test_run_without_teams():
+def test_process_without_teams():
     sqs = prepare_aws()
     mock_sqs = sqs[0]
     queue = sqs[1]
