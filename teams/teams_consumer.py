@@ -1,6 +1,6 @@
 import json
 import os
-from venv import logger
+from logging import getLogger
 
 import pymsteams
 
@@ -12,7 +12,11 @@ consumer = abstract_comsumer
 
 load_dotenv()
 teams_webhook = os.getenv("TEAMS_WEBHOOK")
+
 exception = pymsteams.TeamsWebhookException
+
+logger = getLogger()
+
 def send(message_to_send):
     logger.info("Sending...")
     outgoing = pymsteams.connectorcard(teams_webhook)
