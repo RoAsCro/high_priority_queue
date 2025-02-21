@@ -1,13 +1,13 @@
 import json
 import os
-from logging import getLogger
 
 import pymsteams
-
 from dotenv import load_dotenv
 from flask import Flask
+import logging
 
 import abstract_comsumer
+
 consumer = abstract_comsumer
 
 load_dotenv()
@@ -15,10 +15,8 @@ teams_webhook = os.getenv("TEAMS_WEBHOOK")
 
 exception = pymsteams.TeamsWebhookException
 
-logger = getLogger()
-
 def send(message_to_send):
-    logger.info("Sending...")
+    logging.info("Sending...")
     outgoing = pymsteams.connectorcard(teams_webhook)
     message_json = json.loads(message_to_send["Body"])
     priority = message_json['priority'].capitalize()
@@ -41,6 +39,6 @@ if __name__ == "__main__":
     try:
         run().run(host="0.0.0.0")
     except KeyboardInterrupt:
-        logger.info("Shutting Down...")
+        logging.info("Shutting Down...")
         bg_thread.join()
         consumer.running = False
