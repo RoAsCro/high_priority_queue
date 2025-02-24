@@ -1,49 +1,38 @@
 import json
+import logging
 import os
 
-import dotenv
 import pymsteams
 from dotenv import load_dotenv
-from flask import Flask
-import logging
-
-import sqs_consumer
-
+from sqs_consumer import abstract_consumer
 
 load_dotenv()
 teams_webhook = os.getenv("TEAMS_WEBHOOK")
-
 exception = pymsteams.TeamsWebhookException
-consumer = sqs_consumer.abstract_consumer.AbstractConsumer(dotenv.dotenv_values())
+class TeamsConsumer(abstract_consumer.AbstractConsumer):
+    def __init__(self):
+        super().__init__()
+        self.exception = exception
 
+    def send(self, message_to_send):
+        logging.info("Sending...")
+        outgoing = pymsteams.connectorcard(teams_webhook)
+        message_json = json.loads(message_to_send["Body"])
+        priority = message_json['priority'].capitalize()
+        body: str = message_json['message']
+        body = body.replace("\n", "<br>")
+        outgoing.text(f"<h1 style='font-weight: bold'>{priority} priority: {message_json['title']}</h1>"
+                      f"<p>{body}</p>")
+        outgoing.send()
 
-def send(message_to_send):
-    logging.info("Sending...")
-    outgoing = pymsteams.connectorcard(teams_webhook)
-    message_json = json.loads(message_to_send["Body"])
-    priority = message_json['priority'].capitalize()
-    body: str = message_json['message']
-    body = body.replace("\n", "<br>")
-    outgoing.text(f"<h1 style='font-weight: bold'>{priority} priority: {message_json['title']}</h1>"
-                  f"<p>{body}</p>")
-    outgoing.send()
+consumer = TeamsConsumer()
 
-
-consumer.send = send
-consumer.exception = exception
-bg_thread = consumer.background_thread()
-def run():
-    health_checker = Flask(__name__)
-    health_checker.register_blueprint(consumer.router)
-    return health_checker
+run = consumer.run
 
 if __name__ == "__main__":
-    print(dotenv.dotenv_values())
-    print(consumer.queue)
-
     try:
         run().run(host="0.0.0.0")
     except KeyboardInterrupt:
         logging.info("Shutting Down...")
-        bg_thread.join()
+        consumer.bg_thread.join()
         consumer.running = False

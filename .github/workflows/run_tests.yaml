@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - consumerfromgit
 jobs:
    Build:
     name: Build
