@@ -6,9 +6,9 @@ from dotenv import load_dotenv
 from flask import Flask
 import logging
 
-import abstract_comsumer
+import sqs_consumer
 
-consumer = abstract_comsumer
+consumer = sqs_consumer.abstract_consumer
 
 load_dotenv()
 teams_webhook = os.getenv("TEAMS_WEBHOOK")

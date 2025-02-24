@@ -3,3 +3,4 @@ Flask==3.1.0
 pymsteams==0.2.5
 python-dotenv==1.0.1
 gunicorn==23.0.0
+sqs_consumer @ git+https://github.com/RoAsCro/SQSConsumer
