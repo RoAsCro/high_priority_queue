@@ -1,6 +1,7 @@
 import json
 import os
 
+import dotenv
 import pymsteams
 from dotenv import load_dotenv
 from flask import Flask
@@ -8,12 +9,13 @@ import logging
 
 import sqs_consumer
 
-consumer = sqs_consumer.abstract_consumer
 
 load_dotenv()
 teams_webhook = os.getenv("TEAMS_WEBHOOK")
 
 exception = pymsteams.TeamsWebhookException
+consumer = sqs_consumer.abstract_consumer.AbstractConsumer(dotenv.dotenv_values())
+
 
 def send(message_to_send):
     logging.info("Sending...")
@@ -36,6 +38,9 @@ def run():
     return health_checker
 
 if __name__ == "__main__":
+    print(dotenv.dotenv_values())
+    print(consumer.queue)
+
     try:
         run().run(host="0.0.0.0")
     except KeyboardInterrupt:
