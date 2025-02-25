@@ -1,4 +1,4 @@
-FROM python
+FROM python:3.10
 WORKDIR /app
 ADD ./teams/requirements.txt /app/requirements.txt
 RUN pip3 install -r ./requirements.txt

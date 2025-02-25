@@ -80,6 +80,7 @@ def test_process_without_teams():
     consumer.process()
     consumer.running = False
     assert (consumer.sent_message is not None  # Message was received
+            and ("high" and "message title" and "this is a message body") in consumer.sent_message
             and "Message" not in consumer.sqs.receive_message( # Message was deleted
         QueueUrl=consumer.queue,
         MaxNumberOfMessages=1,
