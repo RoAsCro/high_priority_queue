@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 
 import pymsteams
@@ -17,7 +16,6 @@ class TeamsConsumer(abstract_consumer.AbstractConsumer):
 
 
     def send(self, message_to_send):
-        logging.info("Sending...")
         message_json = json.loads(message_to_send["Body"])
         priority = message_json['priority'].capitalize()
         body: str = message_json['message']
@@ -34,6 +32,6 @@ if __name__ == "__main__":
     try:
         run().run(host="0.0.0.0")
     except KeyboardInterrupt:
-        logging.info("Shutting Down...")
+        consumer.info_logger.info("Shutting Down...")
         consumer.bg_thread.join()
         consumer.running = False
