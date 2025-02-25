@@ -13,17 +13,18 @@ class TeamsConsumer(abstract_consumer.AbstractConsumer):
     def __init__(self):
         super().__init__()
         self.exception = exception
+        self.outgoing = pymsteams.connectorcard(teams_webhook)
+
 
     def send(self, message_to_send):
         logging.info("Sending...")
-        outgoing = pymsteams.connectorcard(teams_webhook)
         message_json = json.loads(message_to_send["Body"])
         priority = message_json['priority'].capitalize()
         body: str = message_json['message']
         body = body.replace("\n", "<br>")
-        outgoing.text(f"<h1 style='font-weight: bold'>{priority} priority: {message_json['title']}</h1>"
+        self.outgoing.text(f"<h1 style='font-weight: bold'>{priority} priority: {message_json['title']}</h1>"
                       f"<p>{body}</p>")
-        outgoing.send()
+        self.outgoing.send()
 
 consumer = TeamsConsumer()
 

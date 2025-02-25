@@ -2,27 +2,36 @@ import threading
 import time
 
 import boto3
+import pymsteams
 import pytest
 from sqs_consumer.abstract_consumer import AbstractConsumer
 
 import teams
 from moto import mock_aws
 
-class ConsumerStub(AbstractConsumer):
+from teams.teams_consumer import TeamsConsumer
+
+
+
+
+message_body = '{"priority": "high", "title": "message title", "message": "this is a message body"}'
+
+
+class ConsumerStub(TeamsConsumer):
+    sent_message = None
+
     @mock_aws()
     def __init__(self):
         super().__init__()
+        self.outgoing = pymsteams.connectorcard("")
+        self.outgoing.send = self.send_stub
 
-    def send(self, message):
-        global received_message
-        received_message = message["Body"]
-        consumer.running = False
+
+    def send_stub(self):
+        self.sent_message = self.outgoing.payload.get("text")
+
 
 consumer = ConsumerStub()
-
-message_body = '{"priority": "high", "title": "message title", "message": "this is a message body"}'
-received_message = None
-
 @mock_aws
 def test_get_message():
     prepare_aws()
@@ -65,13 +74,12 @@ def test_process_without_teams():
     consumer.sqs.send_message(QueueUrl=consumer.queue,
                         DelaySeconds=0,
                         MessageBody=message_body)
-    timer_thread = threading.Thread(target=timer, args=[5]) # Ensure test doesn't run forever if it fails
+    timer_thread = threading.Thread(target=timer, args=[20]) # Ensure test doesn't run forever if it fails
     timer_thread.start()
     consumer.running = True
     consumer.process()
     consumer.running = False
-    global received_message
-    assert (received_message is not None # Message was received
+    assert (consumer.sent_message is not None  # Message was received
             and "Message" not in consumer.sqs.receive_message( # Message was deleted
         QueueUrl=consumer.queue,
         MaxNumberOfMessages=1,
@@ -94,5 +102,4 @@ def prepare_aws():
 
 @pytest.fixture(autouse=True)
 def before_each():
-    global received_message
-    received_message = None
+    consumer.sent_message = None
