@@ -10,7 +10,7 @@ teams_webhook = os.getenv("TEAMS_WEBHOOK")
 exception = pymsteams.TeamsWebhookException
 class TeamsConsumer(abstract_consumer.AbstractConsumer):
     def __init__(self):
-        super().__init__()
+        super().__init__(queue_var_name="HIGH_PRIORITY_QUEUE")
         self.exception = exception
         self.outgoing = pymsteams.connectorcard(teams_webhook)
 
